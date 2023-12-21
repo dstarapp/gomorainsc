@@ -1,0 +1,392 @@
+type TransferError = variant {
+  BadBurn : record { min_burn_amount : nat };
+  BadFee : record { expected_fee : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  Duplicate : record { duplicate_of : nat };
+  GenericError : record {
+    error_code : nat;
+    message : text;
+  };
+  InsufficientFunds : record { balance : nat };
+  TemporarilyUnavailable;
+  TooOld;
+};
+type TransferArgs = record {
+  amount : nat64;
+  memo : nat64;
+  to : blob;
+};
+type Tokens = record { e8s : nat64 };
+type SubcribeType = variant {
+  Day1000;
+  Day180;
+  Day30;
+  Day360;
+  Day90;
+  Free;
+  Permanent;
+};
+type SubcribePrice = record {
+  price : nat;
+  subType : SubcribeType;
+};
+type Result = variant {
+  Err : TransferError;
+  Ok : nat;
+};
+type QuerySubcriberResp = record {
+  data : vec QuerySubcriber;
+  hasmore : bool;
+  page : nat;
+  total : int;
+};
+type QuerySubcriber = record {
+  created : int;
+  expireTime : int;
+  isblack : bool;
+  pid : principal;
+  subType : SubcribeType;
+};
+type QuerySort = variant {
+  TimeAsc;
+  TimeDesc;
+};
+type QuerySelfSubscriber = record {
+  data : opt QuerySubcriber;
+  isblack : bool;
+};
+type QueryOrderResp = record {
+  data : vec QueryOrder;
+  hasmore : bool;
+  page : nat;
+  total : int;
+};
+type QueryOrder = record {
+  amount : nat64;
+  amountPaid : nat64;
+  createdTime : int;
+  from : principal;
+  id : nat64;
+  paytype : PayType;
+  sharedTime : opt int;
+  source : text;
+  status : PayStatus;
+  to : blob;
+  token : text;
+  verifiedTime : opt int;
+};
+type QueryDetailResp = variant {
+  Err : text;
+  Ok : record {
+    article : QueryArticle;
+    content : text;
+  };
+};
+type QueryCommonSubscriber = record {
+  data : opt QuerySubcriber;
+  issubscriber : bool;
+};
+type QueryCommonReq = record {
+  page : nat;
+  size : nat;
+  sort : QuerySort;
+};
+type QueryCommentResp = record {
+  data : vec QueryComment;
+  hasmore : bool;
+  page : nat;
+  total : int;
+};
+type QueryCommentReq = record {
+  aid : text;
+  page : nat;
+  pid : opt principal;
+  size : nat;
+  sort : QuerySort;
+};
+type QueryComment = record {
+  aid : text;
+  content : text;
+  created : int;
+  id : nat;
+  like : nat;
+  pid : principal;
+  reply : opt QueryComment;
+  status : CommentStatus;
+};
+type QueryCategory = record {
+  children : vec QueryCategory;
+  id : nat;
+  name : text;
+};
+type QueryBlackUserResp = record {
+  data : vec BlackUser;
+  hasmore : bool;
+  page : nat;
+  total : int;
+};
+type QueryAwardResp = record {
+  data : vec QueryAward;
+  hasmore : bool;
+  page : nat;
+  total : int;
+};
+type QueryAwardReq = record {
+  aid : text;
+  page : nat;
+  size : nat;
+  sort : QuerySort;
+};
+type QueryAward = record {
+  aid : text;
+  amount : nat64;
+  created : int;
+  from : principal;
+  id : nat64;
+  token : text;
+};
+type QueryArticleResp = record {
+  data : vec QueryArticle;
+  hasmore : bool;
+  page : nat;
+  stat : ArticleStat;
+  total : int;
+};
+type QueryArticleReq = record {
+  atype : opt ArticleType;
+  cate : nat;
+  page : nat;
+  search : text;
+  size : nat;
+  sort : QuerySort;
+  status : opt ArticleStatus;
+  subcate : nat;
+};
+type QueryArticle = record {
+  abstract : text;
+  allowComment : bool;
+  atype : ArticleType;
+  author : principal;
+  cate : nat;
+  comment : nat;
+  commentNew : nat;
+  commentTotal : nat;
+  copyright : opt text;
+  created : int;
+  fromurl : text;
+  id : text;
+  like : nat;
+  original : bool;
+  status : ArticleStatus;
+  subcate : nat;
+  tags : vec text;
+  thumb : text;
+  title : text;
+  toped : int;
+  unlike : nat;
+  updated : int;
+  view : nat64;
+};
+type PlanetInfo = record {
+  article : nat;
+  articleStat : ArticleStat;
+  avatar : text;
+  canindex : bool;
+  canister : principal;
+  categorys : vec QueryCategory;
+  cover : text;
+  created : int;
+  desc : text;
+  income : nat64;
+  lang : text;
+  last24subcriber : nat;
+  memory : nat;
+  name : text;
+  owner : principal;
+  payee : opt blob;
+  permission : PermissionType;
+  subcriber : nat;
+  subcriber_new : nat;
+  subcribers : vec QuerySubcriber;
+  subprices : vec SubcribePrice;
+  twitter : text;
+  url : text;
+  writers : vec principal;
+};
+type PlanetBase = record {
+  article : nat;
+  avatar : text;
+  canindex : bool;
+  canister : principal;
+  categorys : vec QueryCategory;
+  cover : text;
+  created : int;
+  desc : text;
+  income : nat64;
+  lang : text;
+  name : text;
+  owner : principal;
+  subcriber : nat;
+  subcribers : vec QuerySubcriber;
+  subprices : vec SubcribePrice;
+  twitter : text;
+  url : text;
+  writers : vec principal;
+};
+type PermissionType = variant {
+  NONE;
+  OWNER;
+  WRITER;
+};
+type PayType = variant {
+  Award : AwardPrice;
+  Price : SubcribePrice;
+  Verify : bool;
+};
+type PayStatus = variant {
+  Cancel;
+  Paid;
+  Refunded;
+  Timeout;
+  Unpaid;
+  Verifying;
+};
+type PayResp = variant {
+  Err : text;
+  Ok : record { invoice : PayInfo };
+};
+type PayInfo = record {
+  amount : nat64;
+  createdTime : int;
+  id : nat64;
+  paytype : PayType;
+  to : blob;
+  token : text;
+};
+type OpResult = variant {
+  Err : text;
+  Ok : record { data : text };
+};
+type ICRCTransferArgs = record {
+  amount : nat64;
+  memo : opt blob;
+  to : Account;
+  token : text;
+};
+type CommentStatus = variant {
+  Invisible;
+  Visible;
+};
+type CommentArgs = record {
+  aid : text;
+  content : text;
+};
+type BlackUser = record {
+  created : int;
+  pid : principal;
+};
+type AwardPrice = record { aid : text };
+type ArticleType = variant {
+  Article;
+  Audio;
+  Photos;
+  Shortle;
+  Video;
+};
+type ArticleStatus = variant {
+  Delete;
+  Draft;
+  Private;
+  Public;
+  Subcribe;
+};
+type ArticleStat = record {
+  draftCount : nat;
+  privateCount : nat;
+  publicCount : nat;
+  subcribeCount : nat;
+  total : nat;
+};
+type ArticleArgs = record {
+  abstract : text;
+  allowComment : bool;
+  atype : ArticleType;
+  cate : nat;
+  content : text;
+  fromurl : text;
+  id : text;
+  original : bool;
+  status : ArticleStatus;
+  subcate : nat;
+  tags : vec text;
+  thumb : text;
+  title : text;
+};
+type AccountIdentifier = blob;
+type Account = record {
+  owner : principal;
+  subaccount : opt blob;
+};
+service : () -> {
+  addArticle : (ArticleArgs) -> (OpResult);
+  addBlackUser : (principal) -> (bool);
+  addComment : (CommentArgs) -> (OpResult);
+  adminArticle : (text) -> (QueryDetailResp) query;
+  adminArticles : (QueryArticleReq) -> (QueryArticleResp) query;
+  adminBlackUsers : (QueryCommonReq) -> (QueryBlackUserResp) query;
+  adminComments : (QueryCommentReq) -> (QueryCommentResp) query;
+  adminReplyComment : (nat, CommentArgs) -> (OpResult);
+  adminShowComment : (nat, bool) -> (bool);
+  adminSubcribers : (QueryCommonReq) -> (QuerySubcriberResp) query;
+  cancelThumbsup : (text, opt nat) -> (OpResult);
+  canisterAccount : () -> (AccountIdentifier) query;
+  canisterBalance : () -> (Tokens);
+  canisterMemory : () -> (nat) query;
+  canisterTransfer : (TransferArgs) -> (bool);
+  confirmAward : (nat64) -> (bool);
+  copyright : (text) -> (bool);
+  deleteArticle : (text) -> (bool);
+  getPlanetBase : () -> (PlanetBase) query;
+  getPlanetInfo : () -> (PlanetInfo) query;
+  getRecoverOwner : () -> (opt principal) query;
+  getSelfSubcriber : () -> (QuerySelfSubscriber) query;
+  get_version : () -> (text) query;
+  icrc1_transfer : (ICRCTransferArgs) -> (Result);
+  isSubscriber : (principal) -> (QueryCommonSubscriber) query;
+  preAward : (text, text, text) -> (PayResp);
+  preSubscribe : (text, SubcribePrice) -> (PayResp);
+  queryArticle : (text) -> (QueryDetailResp) query;
+  queryArticles : (QueryArticleReq) -> (QueryArticleResp) query;
+  queryAwards : (QueryAwardReq) -> (QueryAwardResp) query;
+  queryComments : (QueryCommentReq) -> (QueryCommentResp) query;
+  queryOrders : (QueryCommonReq) -> (QueryOrderResp) query;
+  refundOrder : (nat64, blob) -> (bool);
+  removeBlackUser : (principal) -> (bool);
+  resetArticleCommentNew : (text) -> (bool);
+  resetSubscriberNew : () -> (bool);
+  setAvatar : (text) -> (bool);
+  setCanIndex : (bool) -> (bool);
+  setCategorys : (vec QueryCategory) -> (bool);
+  setCover : (text) -> (bool);
+  setCustomUrl : (text) -> (bool);
+  setDesc : (text) -> (bool);
+  setLang : (text) -> (bool);
+  setName : (text) -> (bool);
+  setOwner : (principal) -> (bool);
+  setRecoverOwner : (principal) -> (bool);
+  setSubPrices : (vec SubcribePrice) -> (bool);
+  setTwitter : (text) -> (bool);
+  setWriters : (vec principal) -> (bool);
+  subscribe : (nat64) -> (bool);
+  thumbsup : (text, opt nat) -> (OpResult);
+  topedArticle : (text, bool) -> (OpResult);
+  transferSubscribe : (principal) -> (bool);
+  unsubscribe : () -> (bool);
+  updateArticle : (ArticleArgs) -> (OpResult);
+  verifyOwner : (opt principal) -> (bool) query;
+  verifyOwnerWriter : (opt principal) -> (bool) query;
+  verifySubcriber : (opt principal) -> (bool) query;
+  verifyWriter : (opt principal) -> (bool) query;
+  wallet_balance : () -> (nat) query;
+  wallet_receive : () -> (record { accepted : nat64 });
+};

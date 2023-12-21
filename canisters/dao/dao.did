@@ -1,0 +1,38 @@
+type CreatePlanetSetting = record {
+  avatar : text;
+  code : text;
+  desc : text;
+  name : text;
+  owner : principal;
+};
+type CreatePlanetResp = variant {
+  Err : text;
+  Ok : record { id : principal };
+};
+type CanisterInfo = record {
+  id : principal;
+  initArgs : blob;
+  launchTrail : principal;
+  moduleHash : blob;
+  owner : principal;
+};
+service : () -> {
+  canisterAccount : () -> (text) query;
+  createPlanet : (CreatePlanetSetting) -> (CreatePlanetResp);
+  initTrail : (int) -> (int);
+  queryAgreePayee : () -> (text) query;
+  queryCanisterCount : () -> (int) query;
+  queryCanisterIds : () -> (vec text) query;
+  queryCanisterPids : () -> (vec principal) query;
+  queryCanisters : () -> (vec CanisterInfo) query;
+  queryTrailPids : () -> (vec principal) query;
+  queryTrailWasmHash : () -> (text) query;
+  queryWasmHash : () -> (text) query;
+  setAgreePayee : (blob) -> () oneway;
+  setInviter : (principal) -> () oneway;
+  setOwner : (principal) -> () oneway;
+  setTrailWasm : (blob) -> () oneway;
+  setUserRouter : (principal) -> () oneway;
+  setWasm : (blob) -> () oneway;
+  upgradePlanet : (principal) -> (bool);
+};
