@@ -13,6 +13,7 @@ import (
 	"github.com/aviate-labs/agent-go/principal"
 	"github.com/dstarapp/gomorainsc/inscription"
 	"github.com/dstarapp/gomorainsc/moraprotocol"
+	"github.com/dstarapp/gomorainsc/robot"
 	"github.com/eapache/channels"
 )
 
@@ -25,6 +26,8 @@ type Config struct {
 	DbPath    string   `toml:"db_path"`
 	MoraFile  string   `toml:"mora_file"`
 	BlackIDs  []string `toml:"black_ids"`
+	RobotHost string   `toml:"robot_host"`
+	Runfirst  bool     `toml:"runfirst"`
 }
 
 type Indexer struct {
@@ -36,6 +39,7 @@ type Indexer struct {
 	ftmtx       sync.RWMutex
 	preitemchan *channels.InfiniteChannel
 	preitemwait *sync.WaitGroup
+	roboter     *robot.Roboter
 }
 
 func NewIndexer(cfg *Config) *Indexer {
@@ -43,6 +47,7 @@ func NewIndexer(cfg *Config) *Indexer {
 		cfg:       cfg,
 		closechan: make(chan bool),
 		fts:       make(map[string]*inscription.FT),
+		roboter:   robot.NewRoboter(cfg.RobotHost),
 	}
 }
 
@@ -93,8 +98,10 @@ func (p *Indexer) GetFt(tick string) *inscription.FT {
 func (p *Indexer) do_ticker() {
 	defer p.indexwait.Done()
 
-	if err := p.do_task(); err != nil {
-		logs.Error("fisrt spider_planets", err)
+	if p.cfg.Runfirst {
+		if err := p.do_task(); err != nil {
+			logs.Error("fisrt spider_planets", err)
+		}
 	}
 
 	ticker := time.NewTicker(time.Minute * time.Duration(p.cfg.TickMin))
@@ -315,7 +322,7 @@ func (p *Indexer) checkBlack(pid principal.Principal) bool {
 			return true
 		}
 	}
-	return false
+	return p.db.CheckBlackCanister(pid.String())
 }
 
 func (p *Indexer) PrintFts() {

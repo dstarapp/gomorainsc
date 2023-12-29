@@ -10,6 +10,7 @@ import (
 	"github.com/astaxie/beego/logs"
 	"github.com/dstarapp/gomorainsc/canisters/planet"
 	"github.com/dstarapp/gomorainsc/inscription"
+	"github.com/dstarapp/gomorainsc/robot"
 	"github.com/dstarapp/gomorainsc/utils"
 )
 
@@ -109,6 +110,28 @@ func (p *Indexer) match_protocol_base(item *inscription.MoraFTItem) bool {
 		return false
 	}
 
+	if p.db.CheckBlack(item.Owner) {
+		return false
+	}
+
+	if p.db.CheckWhite(item.Owner) {
+		return true
+	}
+
+	val, err := p.roboter.IsRobot(robot.RobotTestReq{
+		Owner:    item.Owner,
+		Canister: item.Canister,
+	})
+	if err != nil {
+		return true
+	}
+	if val {
+		p.db.PutBlackList(item.Owner)
+		p.db.PutBlackCanister(item.Canister)
+		return false
+	} else {
+		p.db.PutWhiteList(item.Owner)
+	}
 	return true
 }
 

@@ -11,14 +11,17 @@ import (
 )
 
 const (
-	BUCKET_PROTOCOL_SYSTEM       = "p_system"
-	BUCKET_PROTOCOL_PREINDEX     = "p_preindex"
-	BUCKET_PROTOCOL_PREINDEX_NEW = "p_preindex_new"
-	BUCKET_PROTOCOL_INDEX        = "p_index"
-	BUCKET_PROTOCOL_PREFT        = "p_preft"
-	BUCKET_PROTOCOL_FT           = "p_ft"
-	BUCKET_PROTOCOL_TICK         = "pr_tick"
-	BUCKET_PROTOCOL_DROPINDEX    = "p_dropindex"
+	BUCKET_PROTOCOL_SYSTEM        = "p_system"
+	BUCKET_PROTOCOL_PREINDEX      = "p_preindex"
+	BUCKET_PROTOCOL_PREINDEX_NEW  = "p_preindex_new"
+	BUCKET_PROTOCOL_INDEX         = "p_index"
+	BUCKET_PROTOCOL_PREFT         = "p_preft"
+	BUCKET_PROTOCOL_FT            = "p_ft"
+	BUCKET_PROTOCOL_TICK          = "pr_tick"
+	BUCKET_PROTOCOL_DROPINDEX     = "p_dropindex"
+	BUCKET_PROTOCOL_WHITELIST     = "p_whitelist"
+	BUCKET_PROTOCOL_BLACKLIST     = "p_blacklist"
+	BUCKET_PROTOCOL_BLACKCANISTER = "p_blackcanister"
 )
 
 var (
@@ -264,6 +267,27 @@ func (p *IndexerDB) UpdateFTCache(ft *inscription.FT) error {
 	return err
 }
 
+func (p *IndexerDB) UpdateItemCache(item *inscription.MoraFTItem) error {
+	if p.db == nil {
+		return errors.New("db is nil")
+	}
+
+	// ft.Metadata.Verify = true
+	err := p.db.Update(func(tx *badger.Txn) error {
+		key := mft_encode_key(item)
+		// update pre index data
+		{
+			indexb := NewBucket(tx, BUCKET_PROTOCOL_PREINDEX)
+			data, _ := json.Marshal(item)
+			if err := indexb.Put(key, data); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
+}
+
 func (p *IndexerDB) PreIndexFTItem(item *inscription.MoraFTItem) error {
 	if p.db == nil {
 		return errors.New("db is nil")
@@ -420,6 +444,37 @@ func (p *IndexerDB) IndexFTItem(item *inscription.MoraFTItem) error {
 	return err
 }
 
+func (p *IndexerDB) DeleteFTItem(item *inscription.MoraFTItem) error {
+	if p.db == nil {
+		return errors.New("db is nil")
+	}
+
+	err := p.db.Update(func(tx *badger.Txn) error {
+		key := mft_encode_key(item)
+
+		// update index FTItem inscription
+		{
+			indexb := NewBucket(tx, BUCKET_PROTOCOL_PREINDEX)
+			indexb.Delete(key)
+		}
+
+		// index ticker list
+		{
+			bucketname := fmt.Sprintf("%s_%s", string(BUCKET_PROTOCOL_TICK), item.Ticker)
+			indexb := NewBucket(tx, bucketname)
+			indexb.Delete(key)
+		}
+
+		// put into global index
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_INDEX)
+			ftb.Delete(key)
+		}
+		return nil
+	})
+	return err
+}
+
 func (p *IndexerDB) ScanFtItem(tick string, fn func(*inscription.MoraFTItem) bool) error {
 	err := p.db.View(func(tx *badger.Txn) error {
 		bucketname := fmt.Sprintf("%s_%s", string(BUCKET_PROTOCOL_TICK), tick)
@@ -469,4 +524,101 @@ func (p *IndexerDB) CalcCount(ft *inscription.FT) (int, int) {
 		return true
 	})
 	return confirm_count, unconfirm_count
+}
+
+func (p *IndexerDB) PutWhiteList(owner string) error {
+	if p.db == nil {
+		return errors.New("db is nil")
+	}
+
+	err := p.db.Update(func(tx *badger.Txn) error {
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_WHITELIST)
+			ftb.Put([]byte(owner), []byte{1})
+		}
+		return nil
+	})
+	return err
+}
+
+func (p *IndexerDB) PutBlackList(owner string) error {
+	if p.db == nil {
+		return errors.New("db is nil")
+	}
+
+	err := p.db.Update(func(tx *badger.Txn) error {
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_BLACKLIST)
+			ftb.Put([]byte(owner), []byte{1})
+		}
+		return nil
+	})
+	return err
+}
+
+func (p *IndexerDB) PutBlackCanister(canister string) error {
+	if p.db == nil {
+		return errors.New("db is nil")
+	}
+
+	err := p.db.Update(func(tx *badger.Txn) error {
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_BLACKCANISTER)
+			ftb.Put([]byte(canister), []byte{1})
+		}
+		return nil
+	})
+	return err
+}
+
+func (p *IndexerDB) CheckWhite(owner string) bool {
+
+	has := false
+	err := p.db.View(func(tx *badger.Txn) error {
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_WHITELIST)
+			if ftb.Get([]byte(owner)) != nil {
+				has = true
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return has
+}
+
+func (p *IndexerDB) CheckBlack(owner string) bool {
+	has := false
+	err := p.db.View(func(tx *badger.Txn) error {
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_BLACKLIST)
+			if ftb.Get([]byte(owner)) != nil {
+				has = true
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return has
+}
+
+func (p *IndexerDB) CheckBlackCanister(canister string) bool {
+	has := false
+	err := p.db.View(func(tx *badger.Txn) error {
+		{
+			ftb := NewBucket(tx, BUCKET_PROTOCOL_BLACKCANISTER)
+			if ftb.Get([]byte(canister)) != nil {
+				has = true
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return has
 }

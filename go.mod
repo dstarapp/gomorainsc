@@ -8,7 +8,6 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/astaxie/beego v1.12.3
 	github.com/aviate-labs/agent-go v0.3.2
-	github.com/boltdb/bolt v1.3.1
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/dfinity/keysmith v1.6.2
 	github.com/dgraph-io/badger/v4 v4.2.0
@@ -90,5 +89,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

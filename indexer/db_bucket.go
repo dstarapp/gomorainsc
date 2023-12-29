@@ -22,10 +22,7 @@ func NewBucket(tx *badger.Txn, name string) *Bucket {
 func (p *Bucket) Exist(key []byte) bool {
 	bkey := p.fromkey(key)
 	_, err := p.tx.Get(bkey)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (p *Bucket) Put(key []byte, val []byte) error {
