@@ -2,7 +2,7 @@ module github.com/dstarapp/gomorainsc
 
 go 1.21.0
 
-replace github.com/aviate-labs/agent-go => ../../aviate-labs/agent-go
+// replace github.com/aviate-labs/agent-go => ../../aviate-labs/agent-go
 
 require (
 	github.com/BurntSushi/toml v1.3.2
